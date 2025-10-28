@@ -222,6 +222,11 @@ function read_variable() {
 
 function read_configuration() {
   local name=$1
-  grep -E "^$name=" "$TOOLKIT_ROOT/config/overleaf.rc" \
-  | sed -r "s/^$name=([\"']?)(.+)\1\$/\2/"
+  local value=$(grep -E "^$name=" "$TOOLKIT_ROOT/config/overleaf.rc" | cut -d'=' -f2-)
+  # Remove surrounding quotes if present
+  if [[ $value =~ ^[\"\'](.*)[\"\']\$ ]]; then
+    echo "${BASH_REMATCH[1]}"
+  else
+    echo "$value"
+  fi
 }
