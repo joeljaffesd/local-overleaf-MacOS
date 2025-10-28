@@ -1,0 +1,41 @@
+#!/bin/bash
+
+set -euo pipefail
+
+SCRIPT_PATH="$(dirname "$(realpath "$0")")"
+
+# shellcheck source=lib/shared-functions.sh
+source "${SCRIPT_PATH}/../lib/shared-functions.sh"
+
+function install_fonts() {
+    local container_name="sharelatex"
+    
+    echo "Installing essential font packages and common LaTeX packages in Overleaf container..."
+    
+    if ! docker ps | grep -q "$container_name"; then
+        echo "Error: Overleaf container '$container_name' is not running."
+        echo "Please start Overleaf first with: ./bin/up"
+        exit 1
+    fi
+    
+    echo "Updating TeX Live Manager..."
+    docker exec "$container_name" tlmgr update --self || true
+    
+    echo "Installing URW Base 35 font packages..."
+    docker exec "$container_name" tlmgr install times helvetic courier palatino bookman avantgar ncntrsbk zapfchan zapfding symbol || true
+    
+    echo "Installing TeX Gyre fonts (modern alternatives)..."
+    docker exec "$container_name" tlmgr install tex-gyre || true
+    
+    echo "Installing commonly needed LaTeX packages..."
+    docker exec "$container_name" tlmgr install listings xcolor geometry amsmath amsfonts amssymb graphicx babel-english hyphen-english caption subcaption float booktabs array subfig || true
+    
+    echo "Updating font maps..."
+    docker exec "$container_name" updmap-sys || true
+    
+    echo ""
+    echo "✅ Font and package installation completed!"
+    echo "Your LaTeX projects should now compile without font or common package errors."
+}
+
+install_fonts
